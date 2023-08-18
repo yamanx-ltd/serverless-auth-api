@@ -1,0 +1,111 @@
+using Amazon.DynamoDBv2;
+using Domain.Entities;
+using Domain.Entities.Base;
+using Domain.Repositories;
+using Infrastructure.Repositories.Base;
+
+namespace Infrastructure.Repositories;
+
+public class AuthRepository : DynamoRepository, IAuthRepository
+{
+    public AuthRepository(IAmazonDynamoDB dynamoDb) : base(dynamoDb)
+    {
+    }
+
+
+    public async Task<OtpEntity> CreateLoginOtpAsync(string? userId, string phone, CancellationToken cancellationToken = default)
+    {
+        var entity = new OtpEntity
+        {
+            UserId = userId,
+            Otp = new Random().Next(1000, 9999).ToString(),
+            Key = phone
+        };
+
+        await SaveAsync(entity, cancellationToken);
+
+        return entity;
+    }
+
+    public async Task<OtpEntity?> GetLoginOtpAsync(string phone, string code, CancellationToken cancellationToken = default)
+    {
+        var entity = await GetAsync<OtpEntity>(OtpEntity.GetPk(phone), code, cancellationToken);
+
+        if (entity == null || entity.Otp != code)
+        {
+            return null;
+        }
+
+        return entity;
+    }
+
+    public async Task<RefreshTokenEntity> CreateRefreshTokenAsync(RefreshTokenEntity entity, CancellationToken cancellationToken = default)
+    {
+        await SaveAsync(entity, cancellationToken);
+
+        return entity;
+    }
+
+    public async Task<UserPhoneMapEntity?> GetPhoneUserMapAsync(string phone, CancellationToken cancellationToken = default)
+    {
+        var entities = await GetAllAsync<UserPhoneMapEntity>(UserPhoneMapEntity.GetPk(phone), cancellationToken);
+
+        return entities.FirstOrDefault();
+    }
+
+    public async Task<UserPhoneMapEntity> CreatePhoneUserMapAsync(UserPhoneMapEntity entity, CancellationToken cancellationToken = default)
+    {
+        await SaveAsync(entity, cancellationToken);
+        return entity;
+    }
+
+    public async Task<UserEmailMapEntity> CreateEmailUserMapAsync(UserEmailMapEntity entity, CancellationToken cancellationToken = default)
+    {
+        await SaveAsync(entity, cancellationToken);
+        return entity;
+    }
+
+    public async Task<UserPasswordMapEntity> CreatePasswordUserMapAsync(UserPasswordMapEntity entity, CancellationToken cancellationToken = default)
+    {
+        await SaveAsync(entity, cancellationToken);
+        return entity;
+    }
+
+    public async Task DeleteRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken)
+    {
+        await DeleteAsync(RefreshTokenEntity.GetPk(), refreshToken, cancellationToken);
+    }
+
+    public async Task<RefreshTokenEntity?> GetRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken)
+    {
+        return await GetAsync<RefreshTokenEntity>(RefreshTokenEntity.GetPk(), refreshToken, cancellationToken);
+    }
+
+    public async Task<UserPasswordMapEntity?> GetPasswordUserMapAsync(string userId, CancellationToken cancellationToken)
+    {
+        var entities = await GetAllAsync<UserPasswordMapEntity>(UserPasswordMapEntity.GetPk(userId), cancellationToken);
+        return entities.FirstOrDefault();
+    }
+
+    public async Task<UserEmailMapEntity?> GetEmailUserMapAsync(string email, CancellationToken cancellationToken)
+    {
+        var entities = await GetAllAsync<UserEmailMapEntity>(UserEmailMapEntity.GetPk(email), cancellationToken);
+        return entities.FirstOrDefault();
+    }
+
+    public async Task<List<UserPasswordMapEntity>> GetUserPasswords(string userId, CancellationToken cancellationToken)
+    {
+        return await GetAllAsync<UserPasswordMapEntity>(UserPasswordMapEntity.GetPk(userId), cancellationToken);
+    }
+
+    public async Task DeletePasswords(List<UserPasswordMapEntity> olderPasswords, CancellationToken cancellationToken)
+    {
+        await BatchWriteAsync(new List<IEntity>(), olderPasswords.Select(q => (IEntity) q).ToList(), cancellationToken);
+    }
+
+
+    protected override string GetTableName()
+    {
+        return $"auth";
+    }
+}

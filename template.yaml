@@ -1,0 +1,177 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Auth App API
+
+  SAM Template for Auth App API
+
+Parameters:
+  CodeBucketName:
+    Type: String
+    Default: 'auth api'
+    Description: (Required) The name of the S3 bucket where the Lambda function code is stored. Minimum 3 characters
+
+Resources:
+  AuthApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: serverless-auth-api
+      Description: Auth App API
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  ProxyRoute:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref AuthApi
+      ParentId: !GetAtt AuthApi.RootResourceId
+      PathPart: '{proxy+}'
+  
+  ProxyRouteAnyMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref AuthApi
+      ResourceId: !Ref ProxyRoute
+      AuthorizationType: NONE
+      HttpMethod: ANY
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AuthApiLambdaFunction.Arn}/invocations
+  
+  
+  Deployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - ProxyRouteAnyMethod
+    Properties:
+      RestApiId: !Ref AuthApi
+      StageName: Prod
+
+
+  AuthApiTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: "pk"
+          AttributeType: "S"
+        - AttributeName: "sk"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "pk"
+          KeyType: "HASH"
+        - AttributeName: "sk"
+          KeyType: "RANGE"
+      BillingMode:
+        PAY_PER_REQUEST
+      TimeToLiveSpecification:
+        AttributeName: "ttl"
+        Enabled: true
+      SSESpecification:
+        SSEEnabled: True
+      TableName: auth
+
+  AuthApiLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: AuthApiLambdaFunction
+      CodeUri:
+        Bucket: !Ref CodeBucketName
+        Key: deploy.zip
+      Handler: Api
+      Role: !GetAtt AuthApiLambdaFunctionExecutionRole.Arn
+      MemorySize: 512
+      Timeout: 180
+      Runtime: dotnet6
+      Environment:
+        Variables:
+          TABLE_NAME: auth
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: auth
+
+  AuthApiLambdaFunctionPermission:
+    Type: AWS::Lambda::Permission
+    DependsOn:
+      - AuthApi
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref AuthApiLambdaFunction
+      Principal: apigateway.amazonaws.com
+
+  AuthApiLambdaFunctionExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: allowLambdaLogs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:*
+                Resource: arn:aws:logs:*:*:*
+        - PolicyName: AuthApiLambdaDbPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:*
+                Resource: !GetAtt AuthApiTable.Arn
+        - PolicyName: AuthApiLambdaSQSPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:*
+                Resource: arn:aws:sqs:*:*:*
+        - PolicyName: allowParameterStore
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParametersByPath
+                Resource: '*'
+                
+  JwtParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /auth-api/Jwt
+      Type: String
+      Value:  'please fill'
+      Description: JWT
+      
+  PasswordSaltParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /auth-api/PasswordSalt
+      Type: String
+      Value:  'please fill'
+      Description: JWT
+      
+  SmsProvidersParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /auth-api/SmsProviders
+      Type: String
+      Value:  'please fill'
+      Description: JWT      
+      
+Outputs:
+  AuthApiURI:
+    Description: "The Rest URI to connect to"
+    Value: !Join [ '', [ 'https://', !Ref AuthApi, '.execute-api.',!Ref 'AWS::Region','.amazonaws.com/','prod' ] ]
