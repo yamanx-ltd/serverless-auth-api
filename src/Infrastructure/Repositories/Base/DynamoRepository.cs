@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using System.Web;
 using Amazon.DynamoDBv2;
+using Amazon.DynamoDBv2.DataModel;
 using Amazon.DynamoDBv2.Model;
 using Domain.Entities.Base;
 using Domain.Enum;
@@ -12,6 +13,7 @@ namespace Infrastructure.Repositories.Base
     public abstract class DynamoRepository
     {
         private readonly IAmazonDynamoDB _dynamoDb;
+        private readonly IDynamoDBContext _dynamoDbContext;
 
         internal DynamoRepository(IAmazonDynamoDB dynamoDb)
         {
@@ -295,7 +297,8 @@ namespace Infrastructure.Repositories.Base
                     {":sk", new AttributeValue {S = sk}}
                 },
                 ExclusiveStartKey = exclusiveStartKey,
-                ScanIndexForward = false
+                ScanIndexForward = false,
+                Limit = limit.Value
             };
 
             var response = await _dynamoDb.QueryAsync(queryRequest, cancellationToken);
@@ -306,7 +309,6 @@ namespace Infrastructure.Repositories.Base
             return (result, HttpUtility.UrlEncode(lastKeyEvaluated), response.Count);
         }
 
-     
 
         protected abstract string GetTableName();
     }
