@@ -11,17 +11,19 @@ public class AuthService : IAuthService
 {
     private readonly IAuthRepository _authRepository;
     private readonly IOptionsSnapshot<JwtOptions> _jwtOptionsSnapshot;
+    private readonly IOptionsSnapshot<AllowedPhonesOptions> _allowedPhonesOptions;
     private readonly IMessageService _messageService;
     private readonly ISmsProviderFactory _smsProviderFactory;
     private readonly ICryptoService _cryptoService;
 
-    public AuthService(IAuthRepository authRepository, IOptionsSnapshot<JwtOptions> jwtOptionsSnapshot, IMessageService messageService, ISmsProviderFactory smsProviderFactory, ICryptoService cryptoService)
+    public AuthService(IAuthRepository authRepository, IOptionsSnapshot<JwtOptions> jwtOptionsSnapshot, IMessageService messageService, ISmsProviderFactory smsProviderFactory, ICryptoService cryptoService, IOptionsSnapshot<AllowedPhonesOptions> allowedPhonesOptions)
     {
         _authRepository = authRepository;
         _jwtOptionsSnapshot = jwtOptionsSnapshot;
         _messageService = messageService;
         _smsProviderFactory = smsProviderFactory;
         _cryptoService = cryptoService;
+        _allowedPhonesOptions = allowedPhonesOptions;
     }
 
     public async Task<bool> SendLoginOtpAsync(string? userId, string phone, string culture, CancellationToken cancellationToken = default)
@@ -60,6 +62,14 @@ public class AuthService : IAuthService
     public async Task<bool> VerifyOtpAsync(string phone, string otp, CancellationToken cancellationToken)
     {
         var entity = await _authRepository.GetLoginOtpAsync(phone, otp, cancellationToken);
+        if (entity == null)
+        {
+            if (_allowedPhonesOptions.Value.Phones.Contains(phone))
+            {
+                return otp == _allowedPhonesOptions.Value.Code;
+            }
+        }
+
         return entity != null;
     }
 

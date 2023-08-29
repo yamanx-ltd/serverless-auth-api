@@ -28,7 +28,7 @@ public static class StartupExtensions
         service.AddScoped<ISmsProvider, TwilioSmsProvider>();
         service.AddScoped<IJwtService, JwtService>();
         service.AddAWSService<IAmazonDynamoDB>();
-        service.AddAWSLambdaHosting(LambdaEventSource.RestApi);
+        service.AddAWSLambdaHosting(Environment.GetEnvironmentVariable("ApiGatewayType") == "RestApi" ? LambdaEventSource.RestApi : LambdaEventSource.HttpApi);
         service.AddScoped<IApiContext, ApiContext>();
 
         service.Configure<JwtOptions>(configuration.GetSection("Jwt"));
@@ -37,19 +37,17 @@ public static class StartupExtensions
         var smsSection = configuration.GetSection("SmsProviders");
         service.Configure<NetGsmOptions>(smsSection.GetSection("NetGsm"));
         service.Configure<TwilioOptions>(smsSection.GetSection("Twilio"));
-
+        service.Configure<ApiKeyValidationSettings>(configuration.GetSection("ApiKeyValidationSettings"));
+        service.Configure<AllowedPhonesOptions>(configuration.GetSection("AllowedPhonesOptions"));
+        
 
         configuration.AddSystemsManager(config =>
         {
             config.Path = $"/auth-api";
             config.ReloadAfter = TimeSpan.FromMinutes(5);
             config.ParameterProcessor = new JsonParameterProcessor();
-            config.AwsOptions = new AWSOptions
-            {
-                Profile = "serverless",
-                Region = RegionEndpoint.EUWest1
-            };
         });
+        
         return service;
     }
 }

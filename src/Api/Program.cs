@@ -3,9 +3,13 @@ using Amazon;
 using Amazon.DynamoDBv2;
 using Amazon.Extensions.NETCore.Setup;
 using Api.Infrastructure.Extensions;
+using Api.Infrastructure.Middleware;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Infrastructure.Extensions;
+using Serilog;
+using Serilog.Events;
+using Serilog.Formatting.Json;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,6 +18,14 @@ builder.Services.AddHttpContextAccessor();
 // Add services to the container.
 builder.Services.AddInfrastructure(builder.Configuration);
 
+builder.Logging.ClearProviders();
+// Serilog configuration        
+var logger = new LoggerConfiguration()
+    .WriteTo.Console(new JsonFormatter())
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .CreateLogger();
+// Register Serilog
+builder.Logging.AddSerilog(logger);
 
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
@@ -21,14 +33,11 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddScoped<ApiKeyValidatorMiddleware>();
 
 
-builder.Services.AddDefaultAWSOptions(new AWSOptions
-{
-    Profile = "serverless",
-    Region = RegionEndpoint.EUWest1
-});
-
+var option = builder.Configuration.GetAWSOptions();
+builder.Services.AddDefaultAWSOptions(option);
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -37,14 +46,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler(exceptionHandlerApp => exceptionHandlerApp.Run(async context => await Results.Problem().ExecuteAsync(context)));
+}
+app.UseMiddleware<ApiKeyValidatorMiddleware>();
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapEndpointsCore(AppDomain.CurrentDomain.GetAssemblies());
 
 app.Run();
-
-static IEnumerable<Assembly> GetAssembly()
-{
-    yield return typeof(Program).Assembly;
-}

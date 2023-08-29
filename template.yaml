@@ -13,43 +13,50 @@ Parameters:
 
 Resources:
   AuthApi:
-    Type: AWS::ApiGateway::RestApi
+    Type: AWS::ApiGatewayV2::Api
     Properties:
-      Name: serverless-auth-api
-      Description: Auth App API
-      EndpointConfiguration:
-        Types:
-          - REGIONAL
+      Name: auth-api
+      ProtocolType: HTTP
 
   ProxyRoute:
-    Type: AWS::ApiGateway::Resource
+    Type: AWS::ApiGatewayV2::Route
     Properties:
-      RestApiId: !Ref AuthApi
-      ParentId: !GetAtt AuthApi.RootResourceId
-      PathPart: '{proxy+}'
+      ApiId: !Ref AuthApi
+      RouteKey: 'ANY /{proxy+}'
+      AuthorizationType: NONE
+      OperationName: ApiEndpoints
+      Target: !Join
+        - '/'
+        - - 'integrations'
+          - !Ref ProxyRouteAnyMethod
   
   ProxyRouteAnyMethod:
-    Type: AWS::ApiGateway::Method
+    Type: AWS::ApiGatewayV2::Integration
     Properties:
-      RestApiId: !Ref AuthApi
-      ResourceId: !Ref ProxyRoute
-      AuthorizationType: NONE
-      HttpMethod: ANY
-      Integration:
-        Type: AWS_PROXY
-        IntegrationHttpMethod: POST
-        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AuthApiLambdaFunction.Arn}/invocations
-  
+      ApiId: !Ref AuthApi
+      PayloadFormatVersion: '2.0'
+      Description: ProxyRoute Integration
+      IntegrationType: AWS_PROXY
+      IntegrationUri:
+        Fn::Sub:
+          arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AuthApiLambdaFunction.Arn}/invocations
   
   Deployment:
-    Type: AWS::ApiGateway::Deployment
+    Type: AWS::ApiGatewayV2::Deployment
     DependsOn:
-      - ProxyRouteAnyMethod
+      - ProxyRoute
     Properties:
-      RestApiId: !Ref AuthApi
-      StageName: Prod
+      ApiId: !Ref AuthApi
 
-
+  Stage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      StageName: prod
+      Description: Prod Stage
+      DeploymentId: !Ref Deployment
+      ApiId: !Ref AuthApi
+  
+  
   AuthApiTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -90,7 +97,13 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: auth
-
+  
+  AuthApiLambdaFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/AuthApiLambdaFunction"
+      RetentionInDays: 14
+  
   AuthApiLambdaFunctionPermission:
     Type: AWS::Lambda::Permission
     DependsOn:
@@ -146,31 +159,48 @@ Resources:
                   - ssm:GetParameter
                   - ssm:GetParametersByPath
                 Resource: '*'
-                
+  
   JwtParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Name: /auth-api/Jwt
       Type: String
-      Value:  'please fill'
+      Value: 'please fill'
       Description: JWT
-      
+  
   PasswordSaltParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Name: /auth-api/PasswordSalt
       Type: String
-      Value:  'please fill'
+      Value: 'please fill'
       Description: JWT
-      
+  
   SmsProvidersParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Name: /auth-api/SmsProviders
       Type: String
-      Value:  'please fill'
-      Description: JWT      
-      
+      Value: 'please fill'
+      Description: JWT
+  
+  MediaApiApiKey:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /auth-api/ApiKeyValidationSettings
+      Type: String
+      Value: !Join [ '', [ '{"IsEnabled":false,"HeaderName":"x-api-key","WhiteList":["/swagger"],"ApiKey":"',!Ref AWS::StackId,'"}' ] ]
+      Description: AuthApiKeyValidationSettings
+  
+  AllowedPhonesParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /auth-api/AllowedPhones
+      Type: String
+      Value: '{"Phones":[""],"Code":"1111"}'
+      Description: AuthApiKeyValidationSettings
+
+
 Outputs:
   AuthApiURI:
     Description: "The Rest URI to connect to"
