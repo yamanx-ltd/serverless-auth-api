@@ -2,6 +2,8 @@ using Amazon;
 using Amazon.DynamoDBv2;
 using Amazon.Extensions.Configuration.SystemsManager;
 using Amazon.Extensions.NETCore.Setup;
+using Amazon.Runtime;
+using Amazon.SimpleNotificationService;
 using Domain.Options;
 using Domain.Repositories;
 using Domain.Services;
@@ -27,10 +29,12 @@ public static class StartupExtensions
         service.AddScoped<ISmsProvider, NetGsmSmsProvider>();
         service.AddScoped<ISmsProvider, TwilioSmsProvider>();
         service.AddScoped<IJwtService, JwtService>();
+        service.AddScoped<IEventBusManager, EventBusManager>();
         service.AddAWSService<IAmazonDynamoDB>();
         service.AddAWSLambdaHosting(Environment.GetEnvironmentVariable("ApiGatewayType") == "RestApi" ? LambdaEventSource.RestApi : LambdaEventSource.HttpApi);
         service.AddScoped<IApiContext, ApiContext>();
 
+        service.AddAWSService<IAmazonSimpleNotificationService>();
         service.Configure<JwtOptions>(configuration.GetSection("Jwt"));
         service.Configure<PasswordSalt>(configuration.GetSection("PasswordSalt"));
 
@@ -38,8 +42,9 @@ public static class StartupExtensions
         service.Configure<NetGsmOptions>(smsSection.GetSection("NetGsm"));
         service.Configure<TwilioOptions>(smsSection.GetSection("Twilio"));
         service.Configure<ApiKeyValidationSettings>(configuration.GetSection("ApiKeyValidationSettings"));
-        service.Configure<AllowedPhonesOptions>(configuration.GetSection("AllowedPhonesOptions"));
-        
+        service.Configure<AllowedPhonesOptions>(configuration.GetSection("AllowedPhones"));
+        service.Configure<EventBusSettings>(configuration.GetSection("EventBusSettings"));
+
 
         configuration.AddSystemsManager(config =>
         {
@@ -47,7 +52,7 @@ public static class StartupExtensions
             config.ReloadAfter = TimeSpan.FromMinutes(5);
             config.ParameterProcessor = new JsonParameterProcessor();
         });
-        
+
         return service;
     }
 }

@@ -142,6 +142,16 @@ Resources:
                 Action:
                   - dynamodb:*
                 Resource: !GetAtt AuthApiTable.Arn
+        
+        - PolicyName: AuthApiLambdaSNSPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sns:*
+                Resource: arn:aws:sns:*:*:*
+                
         - PolicyName: AuthApiLambdaSQSPolicy
           PolicyDocument:
             Version: '2012-10-17'
@@ -160,6 +170,19 @@ Resources:
                   - ssm:GetParametersByPath
                 Resource: '*'
   
+  AuthApiEventBus:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: AuthApiEventBus
+
+  AuthApiEventBusParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /auth-api/EventBusSettings
+      Type: String
+      Value: !Join [ '', [ '{"IsEnabled":true,"TopicArn":"',!Ref AuthApiEventBus,'"}' ] ]
+      Description: AuthApiEventBus
+      
   JwtParameter:
     Type: AWS::SSM::Parameter
     Properties:

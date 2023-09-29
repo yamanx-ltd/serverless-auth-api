@@ -12,4 +12,6 @@ public interface IAuthService
     Task<bool> CreatePhoneUserMapping(string phone, string userId, CancellationToken cancellationToken = default);
     Task CreateEmailUserMapping(string email, string userId, CancellationToken cancellationToken);
     Task CreatePasswordUserMapping(string userId, string password, CancellationToken cancellationToken);
+    Task SendForgetPasswordOtp(string userId, string email, CancellationToken cancellationToken);
+    Task<bool> ResetPasswordAsync(string userId, string email, string otp, string password, CancellationToken cancellationToken);
 }

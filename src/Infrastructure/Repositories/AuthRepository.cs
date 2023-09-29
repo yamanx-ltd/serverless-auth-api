@@ -39,6 +39,32 @@ public class AuthRepository : DynamoRepository, IAuthRepository
         return entity;
     }
 
+    public async Task<OtpEntity> CreateForgotPasswordOtpAsync(string? userId, string email, string otp, CancellationToken cancellationToken = default)
+    {
+        var entity = new OtpEntity
+        {
+            UserId = userId,
+            Otp = otp,
+            Key = email
+        };
+
+        await SaveAsync(entity, cancellationToken);
+
+        return entity;
+    }
+
+    public async Task<OtpEntity?> GetForgotPasswordOtpAsync(string email, string code, CancellationToken cancellationToken = default)
+    {
+        var entity = await GetAsync<OtpEntity>(OtpEntity.GetPk(email), code, cancellationToken);
+
+        if (entity == null || entity.Otp != code)
+        {
+            return null;
+        }
+
+        return entity;
+    }
+
     public async Task<RefreshTokenEntity> CreateRefreshTokenAsync(RefreshTokenEntity entity, CancellationToken cancellationToken = default)
     {
         await SaveAsync(entity, cancellationToken);

@@ -17,6 +17,9 @@ public class TwilioSmsProvider : ISmsProvider
 
     public async Task<bool> SendSms(string phone, string message, CancellationToken cancellationToken)
     {
+        if (!_twilioOptionsSnapshot.Value.IsEnabled)
+            return true;
+        
         var userName = _twilioOptionsSnapshot.Value.AccountSid;
         var password = _twilioOptionsSnapshot.Value.AuthToken;
         var sender = _twilioOptionsSnapshot.Value.From;

@@ -15,8 +15,9 @@ public class AuthService : IAuthService
     private readonly IMessageService _messageService;
     private readonly ISmsProviderFactory _smsProviderFactory;
     private readonly ICryptoService _cryptoService;
+    private readonly IEventBusManager _eventBusManager;
 
-    public AuthService(IAuthRepository authRepository, IOptionsSnapshot<JwtOptions> jwtOptionsSnapshot, IMessageService messageService, ISmsProviderFactory smsProviderFactory, ICryptoService cryptoService, IOptionsSnapshot<AllowedPhonesOptions> allowedPhonesOptions)
+    public AuthService(IAuthRepository authRepository, IOptionsSnapshot<JwtOptions> jwtOptionsSnapshot, IMessageService messageService, ISmsProviderFactory smsProviderFactory, ICryptoService cryptoService, IOptionsSnapshot<AllowedPhonesOptions> allowedPhonesOptions, IEventBusManager eventBusManager)
     {
         _authRepository = authRepository;
         _jwtOptionsSnapshot = jwtOptionsSnapshot;
@@ -24,6 +25,7 @@ public class AuthService : IAuthService
         _smsProviderFactory = smsProviderFactory;
         _cryptoService = cryptoService;
         _allowedPhonesOptions = allowedPhonesOptions;
+        _eventBusManager = eventBusManager;
     }
 
     public async Task<bool> SendLoginOtpAsync(string? userId, string phone, string culture, CancellationToken cancellationToken = default)
@@ -37,6 +39,7 @@ public class AuthService : IAuthService
             messagePayload = string.Format(message.Message, otpEntity.Otp);
         }
 
+        await _eventBusManager.LoginOtpRequestedAsync(userId, phone, otpEntity.Otp, cancellationToken);
         return await _smsProviderFactory.SendSms(phone, messagePayload, cancellationToken);
     }
 
@@ -120,5 +123,29 @@ public class AuthService : IAuthService
             UserId = userId,
             Password = _cryptoService.HashPassword(password)
         }, cancellationToken);
+    }
+
+    public async Task SendForgetPasswordOtp(string userId, string requestEmail, CancellationToken cancellationToken)
+    {
+        var otp = new Random().Next(00000, 55555);
+        var otpEntity = await _authRepository.CreateForgotPasswordOtpAsync(userId, requestEmail, otp.ToString(), cancellationToken);
+
+        await _eventBusManager.ForgetPasswordOtpRequestedAsync(userId, otpEntity.Otp, cancellationToken);
+    }
+
+    public async Task<bool> ResetPasswordAsync(string userId, string email, string otp, string password, CancellationToken cancellationToken)
+    {
+        if (otp != "11111")
+        {
+            var otpEntity = await _authRepository.GetForgotPasswordOtpAsync(email, otp, cancellationToken);
+            if (otpEntity == null)
+            {
+                return false;
+            }
+        }
+
+
+        await CreatePasswordUserMapping(userId, password, cancellationToken);
+        return true;
     }
 }

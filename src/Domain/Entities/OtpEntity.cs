@@ -14,7 +14,7 @@ public class OtpEntity : IEntity
     [JsonPropertyName("userId")] public string? UserId { get; set; }
     [JsonPropertyName("otp")] public string Otp { get; set; } = default!;
 
-    [JsonPropertyName("ttl")] public string Ttl => DateTime.UtcNow.AddMinutes(3).ToUnixTimeSeconds();
+    [JsonPropertyName("ttl")] public string Ttl => DateTime.UtcNow.AddMinutes(5).ToUnixTimeSeconds();
 
     public static string GetPk(string pkKey)
     {

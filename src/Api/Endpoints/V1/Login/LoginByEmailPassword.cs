@@ -25,7 +25,7 @@ public class LoginByEmailPassword : IEndpoint
 
         var isPasswordValid = await authService.CheckUserPassword(userId, request.Password, cancellationToken);
         if (!isPasswordValid)
-            return Results.Forbid();
+            return Results.BadRequest(new Dictionary<string, string[]> {{"EmailOrPassword", new[] {"Invalid Email or Password"}}});
 
         var jwt = await jwtService.CreateJwtAsync(userId, cancellationToken);
         return Results.Ok(jwt);
