@@ -19,7 +19,7 @@ public class LoginByEmailPassword : IEndpoint
         if (!validationResult.IsValid)
             return Results.BadRequest(validationResult.ToDictionary());
 
-        var userId = await authService.FindUserByEmail(request.Email, cancellationToken);
+        var userId = await authService.FindUserByEmail(request.Email.ToLower(), cancellationToken);
         if (string.IsNullOrEmpty(userId))
             return Results.NotFound();
 

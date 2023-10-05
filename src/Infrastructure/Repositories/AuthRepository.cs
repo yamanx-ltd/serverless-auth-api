@@ -18,7 +18,7 @@ public class AuthRepository : DynamoRepository, IAuthRepository
         var entity = new OtpEntity
         {
             UserId = userId,
-            Otp = new Random().Next(1000, 9999).ToString(),
+            Otp = new Random().Next(10000, 99999).ToString(),
             Key = phone
         };
 

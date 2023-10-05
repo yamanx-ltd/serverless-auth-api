@@ -27,7 +27,7 @@ public class Register : IEndpoint
 
         if (!string.IsNullOrEmpty(request.Email))
         {
-            await authService.CreateEmailUserMapping(request.Email, request.UserId, cancellationToken);
+            await authService.CreateEmailUserMapping(request.Email.ToLower(), request.UserId, cancellationToken);
         }
 
         if (!string.IsNullOrEmpty(request.Password))
