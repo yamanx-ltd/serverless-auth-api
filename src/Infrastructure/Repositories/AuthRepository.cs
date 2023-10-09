@@ -129,6 +129,35 @@ public class AuthRepository : DynamoRepository, IAuthRepository
         await BatchWriteAsync(new List<IEntity>(), olderPasswords.Select(q => (IEntity) q).ToList(), cancellationToken);
     }
 
+    public async Task DeletePhoneUserMapAsync(UserPhoneMapEntity phoneUserMap, CancellationToken cancellationToken)
+    {
+        await DeleteAsync(UserPhoneMapEntity.GetPk(phoneUserMap.Phone), phoneUserMap.UserId, cancellationToken);
+    }
+
+    public async Task DeleteEmailUserMapAsync(UserEmailMapEntity emailUserMap, CancellationToken cancellationToken)
+    {
+        await DeleteAsync(UserEmailMapEntity.GetPk(emailUserMap.Email), emailUserMap.UserId, cancellationToken);
+    }
+
+    public async Task DeletePasswordUserMapAsync(UserPasswordMapEntity userPasswordMap, CancellationToken cancellationToken)
+    {
+        await DeleteAsync(UserPasswordMapEntity.GetPk(userPasswordMap.UserId), userPasswordMap.Password, cancellationToken);
+    }
+
+    public async Task BatchSaveAsync(List<IEntity> entities, CancellationToken cancellationToken)
+    {
+        await BatchWriteAsync(entities, new List<IEntity>(), cancellationToken);
+    }
+
+    public async Task<List<RefreshTokenUserMapping>> GetUserRefreshTokenMappingsAsync(string userId, CancellationToken cancellationToken)
+    {
+        return await GetAllAsync<RefreshTokenUserMapping>(RefreshTokenUserMapping.GetPk(userId), cancellationToken);
+    }
+
+    public async Task BatchDeleteAsync(List<IEntity> entities, CancellationToken cancellationToken)
+    {
+        await BatchWriteAsync(new List<IEntity>(), entities, cancellationToken);
+    }
 
     protected override string GetTableName()
     {

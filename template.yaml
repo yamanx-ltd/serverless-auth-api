@@ -220,7 +220,7 @@ Resources:
     Properties:
       Name: /auth-api/AllowedPhones
       Type: String
-      Value: '{"Phones":[""],"Code":"1111"}'
+      Value: '{"AllowAll":false,"Phones":[""],"Code":"1111"}'
       Description: AuthApiKeyValidationSettings
 
 

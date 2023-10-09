@@ -14,4 +14,6 @@ public interface IAuthService
     Task CreatePasswordUserMapping(string userId, string password, CancellationToken cancellationToken);
     Task SendForgetPasswordOtp(string userId, string email, CancellationToken cancellationToken);
     Task<bool> ResetPasswordAsync(string userId, string email, string otp, string password, CancellationToken cancellationToken);
+
+    Task<bool> DeleteAllUserDataAsync(string userId, string email, string phone, CancellationToken cancellationToken);
 }

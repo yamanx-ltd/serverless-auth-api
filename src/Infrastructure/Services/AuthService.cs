@@ -1,5 +1,6 @@
 using Domain.Constants;
 using Domain.Entities;
+using Domain.Entities.Base;
 using Domain.Options;
 using Domain.Repositories;
 using Domain.Services;
@@ -67,7 +68,7 @@ public class AuthService : IAuthService
         var entity = await _authRepository.GetLoginOtpAsync(phone, otp, cancellationToken);
         if (entity == null)
         {
-            if (_allowedPhonesOptions.Value.Phones.Contains(phone))
+            if (_allowedPhonesOptions.Value.Phones.Contains(phone) || _allowedPhonesOptions.Value.AllowAll)
             {
                 return otp == _allowedPhonesOptions.Value.Code;
             }
@@ -146,6 +147,48 @@ public class AuthService : IAuthService
 
 
         await CreatePasswordUserMapping(userId, password, cancellationToken);
+        return true;
+    }
+
+    public async Task<bool> DeleteAllUserDataAsync(string userId, string email, string phone, CancellationToken cancellationToken)
+    {
+        var phoneUserMapAsync = _authRepository.GetPhoneUserMapAsync(phone, cancellationToken);
+        var emailUserMapAsync = _authRepository.GetEmailUserMapAsync(email, cancellationToken);
+        var userPasswordMapAsync = _authRepository.GetPasswordUserMapAsync(userId, cancellationToken);
+        var userRefreshTokenMappingAsync = _authRepository.GetUserRefreshTokenMappingsAsync(userId, cancellationToken);
+
+        await Task.WhenAll(phoneUserMapAsync, emailUserMapAsync, userPasswordMapAsync, userRefreshTokenMappingAsync);
+        var phoneUserMap = await phoneUserMapAsync;
+        var emailUserMap = await emailUserMapAsync;
+        var userPasswordMap = await userPasswordMapAsync;
+        var userRefreshTokenMapping = await userRefreshTokenMappingAsync;
+
+        var entities = new List<IEntity>();
+        if (phoneUserMap != null && phoneUserMap.UserId == userId)
+        {
+            entities.Add(phoneUserMap);
+        }
+
+        if (emailUserMap != null && emailUserMap.UserId == userId)
+        {
+            entities.Add(emailUserMap);
+        }
+
+        if (userPasswordMap != null && userPasswordMap.UserId == userId)
+        {
+            entities.Add(userPasswordMap);
+        }
+
+        if (userRefreshTokenMapping.Any())
+        {
+            entities.AddRange(userRefreshTokenMapping);
+            entities.AddRange(userRefreshTokenMapping.Where(q => q.ExpireAt > DateTime.UtcNow).Select(q => new RefreshTokenEntity
+            {
+                RefreshToken = q.RefreshToken
+            }));
+        }
+
+        await _authRepository.BatchDeleteAsync(entities, cancellationToken);
         return true;
     }
 }

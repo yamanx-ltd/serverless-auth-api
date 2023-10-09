@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using Domain.Domains;
 using Domain.Entities;
+using Domain.Entities.Base;
 using Domain.Options;
 using Domain.Repositories;
 using Domain.Services;
@@ -26,12 +27,26 @@ public class JwtService : IJwtService
     {
         var jwt = GenerateJwt(userId);
         var refreshToken = Guid.NewGuid().ToString("N");
-        await _authRepository.CreateRefreshTokenAsync(new RefreshTokenEntity
+
+        var entities = new List<IEntity>();
+
+        var expireAt = DateTime.UtcNow.AddDays(_jwtOptionsSnapshot.Value.RefreshExpireDays);
+        entities.Add(new RefreshTokenEntity
         {
             UserId = userId,
             RefreshToken = refreshToken,
-            ExpireAt = DateTime.UtcNow.AddDays(_jwtOptionsSnapshot.Value.RefreshExpireDays)
-        }, cancellationToken);
+            ExpireAt = expireAt
+        });
+        entities.Add(new RefreshTokenUserMapping
+        {
+            UserId = userId,
+            RefreshToken = refreshToken,
+            ExpireAt = expireAt
+        });
+
+        await _authRepository.BatchSaveAsync(entities, cancellationToken);
+
+
         return new JwtDto(jwt, refreshToken);
     }
 
