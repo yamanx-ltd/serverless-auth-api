@@ -191,4 +191,36 @@ public class AuthService : IAuthService
         await _authRepository.BatchDeleteAsync(entities, cancellationToken);
         return true;
     }
+
+    public async Task<bool> UpdateUserPhoneMappingAsync(string userId, string phone, CancellationToken cancellationToken)
+    {
+        var userPhoneMapping = await _authRepository.GetPhoneUserMapAsync(userId, cancellationToken);
+        if (userPhoneMapping != null)
+        {
+            await _authRepository.DeletePhoneUserMapAsync(userPhoneMapping, cancellationToken);
+        }
+
+        await _authRepository.CreatePhoneUserMapAsync(new UserPhoneMapEntity()
+        {
+            UserId = userId,
+            Phone = phone
+        }, cancellationToken);
+        return true;
+    }
+
+    public async Task<bool> UpdateUserEmailMappingAsync(string userId, string email, CancellationToken cancellationToken)
+    {
+        var mapping = await _authRepository.GetEmailUserMapAsync(userId, cancellationToken);
+        if (mapping != null)
+        {
+            await _authRepository.DeleteEmailUserMapAsync(mapping, cancellationToken);
+        }
+
+        await _authRepository.CreateEmailUserMapAsync(new UserEmailMapEntity
+        {
+            UserId = userId,
+            Email = email
+        }, cancellationToken);
+        return true;
+    }
 }

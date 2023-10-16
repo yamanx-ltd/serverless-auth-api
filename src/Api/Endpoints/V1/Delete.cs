@@ -1,6 +1,5 @@
 using Api.Infrastructure.Contract;
 using Api.Infrastructure.Extensions;
-using Domain.Entities.Base;
 using Domain.Services;
 using Microsoft.AspNetCore.Mvc;
 
