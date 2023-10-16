@@ -19,7 +19,7 @@ public class Put : IEndpoint
 
     public RouteHandlerBuilder MapEndpoint(IEndpointRouteBuilder endpoints)
     {
-        return endpoints.MapPut("/v1/users/{userId}/phone", Handler)
+        return endpoints.MapPut("/v1/users/{userId}/email", Handler)
             .Produces200()
             .Produces400()
             .Produces404()
