@@ -11,14 +11,19 @@ public class LoginByPhoneOtp : IEndpoint
     private static async Task<IResult> Handler([FromBody] LoginByPhoneRequest request,
         [FromServices] IAuthService authService,
         [FromServices] IApiContext apiContext,
+        [FromServices] ICaptchaService captchaService,
         [FromServices] IValidator<LoginByPhoneRequest> validator,
         CancellationToken cancellationToken)
     {
         var validationResult = await validator.ValidateAsync(request, cancellationToken);
         if (!validationResult.IsValid)
             return Results.BadRequest(validationResult.ToDictionary());
-        
-        
+
+        var isCaptchaValid = await captchaService.ValidateAsync(request.CaptchaToken, apiContext.IpAddress, cancellationToken);
+        if (!isCaptchaValid)
+            return Results.BadRequest(new Dictionary<string, string> {{"Captcha", "Captcha is not valid"}});
+
+
         var userId = await authService.FindUserByPhone(request.Phone, cancellationToken);
         var isRegistered = !string.IsNullOrEmpty(userId);
 
@@ -36,7 +41,7 @@ public class LoginByPhoneOtp : IEndpoint
             .WithTags("Login");
     }
 
-    public record LoginByPhoneRequest(string Phone);
+    public record LoginByPhoneRequest(string Phone, string CaptchaToken);
 
     public record LoginByPhoneResponse(string Phone, bool IsRegistered, bool OtpSent);
 

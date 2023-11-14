@@ -18,5 +18,11 @@
       <ProjectReference Include="..\Domain\Domain.csproj" />
       <ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
     </ItemGroup>
+    
+    <ItemGroup>
+      <Folder Include="Endpoints\V1\External\Apple\" />
+      <Folder Include="Endpoints\V1\External\Facebook\" />
+      <Folder Include="Endpoints\V1\External\Instagram\" />
+    </ItemGroup>
 
 </Project>

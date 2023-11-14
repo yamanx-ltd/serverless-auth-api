@@ -14,7 +14,7 @@ public class RefreshTokenUserMapping : IEntity
 
     [JsonPropertyName("expireAt")] public DateTime ExpireAt { get; set; }
 
-    [JsonPropertyName("ttl")] public string Ttl => ExpireAt.ToUnixTimeSeconds();
+    [JsonPropertyName("ttl")] public long Ttl => ExpireAt.ToUnixTimeSeconds();
 
     public static string GetPk(string? pkKey = null) => $"RefreshToken{pkKey}";
 }
