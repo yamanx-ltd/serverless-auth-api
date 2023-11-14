@@ -1,8 +1,5 @@
-using Amazon;
 using Amazon.DynamoDBv2;
 using Amazon.Extensions.Configuration.SystemsManager;
-using Amazon.Extensions.NETCore.Setup;
-using Amazon.Runtime;
 using Amazon.SimpleNotificationService;
 using Domain.Options;
 using Domain.Repositories;
@@ -24,6 +21,7 @@ public static class StartupExtensions
         service.AddSingleton<IAuthRepository, AuthRepository>();
         service.AddScoped<IMessageService, MessageService>();
         service.AddSingleton<IMessageRepository, MessageRepository>();
+        service.AddScoped<ICaptchaService, CaptchaService>();
         service.AddScoped<ICryptoService, CryptoService>();
         service.AddScoped<ISmsProviderFactory, SmsProviderFactory>();
         service.AddScoped<ISmsProvider, NetGsmSmsProvider>();
@@ -37,7 +35,7 @@ public static class StartupExtensions
         service.AddAWSService<IAmazonSimpleNotificationService>();
         service.Configure<JwtOptions>(configuration.GetSection("Jwt"));
         service.Configure<PasswordSalt>(configuration.GetSection("PasswordSalt"));
-
+        service.Configure<CaptchaOptions>(configuration.GetSection("Captcha"));
         var smsSection = configuration.GetSection("SmsProviders");
         service.Configure<NetGsmOptions>(smsSection.GetSection("NetGsm"));
         service.Configure<TwilioOptions>(smsSection.GetSection("Twilio"));
