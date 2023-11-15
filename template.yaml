@@ -226,9 +226,9 @@ Resources:
   CaptchaParameter:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: /auth-api/Captcha
+      Name: /auth-api/CaptchaSettings
       Type: String
-      Value: '{"Captcha": {"Google": {"IsEnabled": true,"ValidationUrl": "https://www.google.com/recaptcha/api/siteverify","ServerKey": ""},"CloudFlare": {"IsEnabled": false, "ValidationUrl": "https://challenges.cloudflare.com/turnstile/v0/siteverify","SecretKey":""}}}'
+      Value: '{"Google": {"IsEnabled": true,"ValidationUrl": "https://www.google.com/recaptcha/api/siteverify","ServerKey": ""},"CloudFlare": {"IsEnabled": false, "ValidationUrl": "https://challenges.cloudflare.com/turnstile/v0/siteverify","SecretKey":""}}'
       Description: CaptchaValidationSettings
 
 

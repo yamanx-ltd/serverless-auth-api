@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Text.Json;
 using Domain.Domains.Cloudflare.Captcha;
 using Domain.Domains.Google.Captcha;
 using Domain.Options;
@@ -19,6 +20,8 @@ public class CaptchaService : ICaptchaService
 
     public async Task<bool> ValidateAsync(string token, string? ip, CancellationToken cancellationToken = default)
     {
+        Console.WriteLine("CaptchaService.ValidateAsync");
+        Console.WriteLine(JsonSerializer.Serialize(_captchaOptions.Value));
         if (_captchaOptions.Value.Google?.IsEnabled == true)
         {
             var httpRequest = new HttpRequestMessage(HttpMethod.Post, _captchaOptions.Value.Google.ValidationUrl);
