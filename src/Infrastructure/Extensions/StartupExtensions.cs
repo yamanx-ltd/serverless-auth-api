@@ -35,7 +35,7 @@ public static class StartupExtensions
         service.AddAWSService<IAmazonSimpleNotificationService>();
         service.Configure<JwtOptions>(configuration.GetSection("Jwt"));
         service.Configure<PasswordSalt>(configuration.GetSection("PasswordSalt"));
-        service.Configure<CaptchaOptions>(configuration.GetSection("Captcha"));
+        service.Configure<CaptchaOptions>(configuration.GetSection("CaptchaSettings"));
         var smsSection = configuration.GetSection("SmsProviders");
         service.Configure<NetGsmOptions>(smsSection.GetSection("NetGsm"));
         service.Configure<TwilioOptions>(smsSection.GetSection("Twilio"));
