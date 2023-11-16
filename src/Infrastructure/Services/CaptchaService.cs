@@ -33,8 +33,8 @@ public class CaptchaService : ICaptchaService
             if (!string.IsNullOrEmpty(ip))
                 payload.Add("remoteip", ip);
             httpRequest.Content = new FormUrlEncodedContent(payload);
-            var responseModel = HttpClient.PostAsync(httpRequest.RequestUri, httpRequest.Content, cancellationToken);
-            var response = await responseModel.Result.Content.ReadFromJsonAsync<GoogleCaptchaResponseModel>(cancellationToken: cancellationToken);
+            var responseModel = await HttpClient.PostAsync(httpRequest.RequestUri, httpRequest.Content, cancellationToken);
+            var response = await responseModel.Content.ReadFromJsonAsync<GoogleCaptchaResponseModel>(cancellationToken: cancellationToken);
             return response?.Success == true;
         }
 
