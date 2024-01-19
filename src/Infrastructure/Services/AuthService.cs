@@ -128,7 +128,7 @@ public class AuthService : IAuthService
 
     public async Task SendForgetPasswordOtp(string userId, string requestEmail, CancellationToken cancellationToken)
     {
-        var otp = new Random().Next(00000, 55555);
+        var otp = new Random().Next(11111, 55555);
         var otpEntity = await _authRepository.CreateForgotPasswordOtpAsync(userId, requestEmail, otp.ToString(), cancellationToken);
 
         await _eventBusManager.ForgetPasswordOtpRequestedAsync(userId, otpEntity.Otp, cancellationToken);
