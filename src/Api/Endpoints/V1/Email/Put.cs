@@ -13,7 +13,7 @@ public class Put : IEndpoint
         [FromServices] IAuthService authService,
         CancellationToken cancellationToken)
     {
-        await authService.UpdateUserEmailMappingAsync(userId, request.Email, cancellationToken);
+        await authService.UpdateUserEmailMappingAsync(userId, request.OldEmail, request.Email, cancellationToken);
         return Results.Ok();
     }
 
@@ -27,5 +27,5 @@ public class Put : IEndpoint
             .WithTags("User");
     }
 
-    public record UpdateUserEmailMappingRequest(string Email);
+    public record UpdateUserEmailMappingRequest(string? OldEmail, string Email);
 }
