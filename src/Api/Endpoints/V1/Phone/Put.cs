@@ -13,7 +13,7 @@ public class Put : IEndpoint
         [FromServices] IAuthService authService,
         CancellationToken cancellationToken)
     {
-        await authService.UpdateUserPhoneMappingAsync(userId, request.Phone, cancellationToken);
+        await authService.UpdateUserPhoneMappingAsync(userId, request.OldPhone, request.Phone, cancellationToken);
         return Results.Ok();
     }
 
@@ -27,5 +27,5 @@ public class Put : IEndpoint
             .WithTags("User");
     }
 
-    public record UpdateUserPhoneMappingRequest(string Phone);
+    public record UpdateUserPhoneMappingRequest(string? OldPhone, string Phone);
 }
