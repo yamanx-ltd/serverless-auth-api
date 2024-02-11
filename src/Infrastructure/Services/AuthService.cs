@@ -18,7 +18,9 @@ public class AuthService : IAuthService
     private readonly ICryptoService _cryptoService;
     private readonly IEventBusManager _eventBusManager;
 
-    public AuthService(IAuthRepository authRepository, IOptionsSnapshot<JwtOptions> jwtOptionsSnapshot, IMessageService messageService, ISmsProviderFactory smsProviderFactory, ICryptoService cryptoService, IOptionsSnapshot<AllowedPhonesOptions> allowedPhonesOptions, IEventBusManager eventBusManager)
+    public AuthService(IAuthRepository authRepository, IOptionsSnapshot<JwtOptions> jwtOptionsSnapshot,
+        IMessageService messageService, ISmsProviderFactory smsProviderFactory, ICryptoService cryptoService,
+        IOptionsSnapshot<AllowedPhonesOptions> allowedPhonesOptions, IEventBusManager eventBusManager)
     {
         _authRepository = authRepository;
         _jwtOptionsSnapshot = jwtOptionsSnapshot;
@@ -29,7 +31,8 @@ public class AuthService : IAuthService
         _eventBusManager = eventBusManager;
     }
 
-    public async Task<bool> SendLoginOtpAsync(string? userId, string phone, string culture, CancellationToken cancellationToken = default)
+    public async Task<bool> SendLoginOtpAsync(string? userId, string phone, string culture,
+        CancellationToken cancellationToken = default)
     {
         var otpEntity = await _authRepository.CreateLoginOtpAsync(userId, phone, cancellationToken);
         var message = await _messageService.GetMessageAsync(culture, MessageKeys.OTPSms, cancellationToken);
@@ -56,7 +59,8 @@ public class AuthService : IAuthService
         return entity?.UserId;
     }
 
-    public async Task<bool> CheckUserPassword(string userId, string password, CancellationToken cancellationToken = default)
+    public async Task<bool> CheckUserPassword(string userId, string password,
+        CancellationToken cancellationToken = default)
     {
         var entity = await _authRepository.GetPasswordUserMapAsync(userId, cancellationToken);
 
@@ -94,7 +98,8 @@ public class AuthService : IAuthService
         await _authRepository.DeleteRefreshTokenAsync(refreshToken, cancellationToken);
     }
 
-    public async Task<bool> CreatePhoneUserMapping(string phone, string userId, CancellationToken cancellationToken = default)
+    public async Task<bool> CreatePhoneUserMapping(string phone, string userId,
+        CancellationToken cancellationToken = default)
     {
         var entity = new UserPhoneMapEntity()
         {
@@ -129,12 +134,14 @@ public class AuthService : IAuthService
     public async Task SendForgetPasswordOtp(string userId, string requestEmail, CancellationToken cancellationToken)
     {
         var otp = new Random().Next(11111, 55555);
-        var otpEntity = await _authRepository.CreateForgotPasswordOtpAsync(userId, requestEmail, otp.ToString(), cancellationToken);
+        var otpEntity =
+            await _authRepository.CreateForgotPasswordOtpAsync(userId, requestEmail, otp.ToString(), cancellationToken);
 
         await _eventBusManager.ForgetPasswordOtpRequestedAsync(userId, otpEntity.Otp, cancellationToken);
     }
 
-    public async Task<bool> ResetPasswordAsync(string userId, string email, string otp, string password, CancellationToken cancellationToken)
+    public async Task<bool> ResetPasswordAsync(string userId, string email, string otp, string password,
+        CancellationToken cancellationToken)
     {
         if (otp != "11111")
         {
@@ -150,7 +157,8 @@ public class AuthService : IAuthService
         return true;
     }
 
-    public async Task<bool> DeleteAllUserDataAsync(string userId, string email, string phone, CancellationToken cancellationToken)
+    public async Task<bool> DeleteAllUserDataAsync(string userId, string email, string phone,
+        CancellationToken cancellationToken)
     {
         var phoneUserMapAsync = _authRepository.GetPhoneUserMapAsync(phone, cancellationToken);
         var emailUserMapAsync = _authRepository.GetEmailUserMapAsync(email, cancellationToken);
@@ -182,23 +190,29 @@ public class AuthService : IAuthService
         if (userRefreshTokenMapping.Any())
         {
             entities.AddRange(userRefreshTokenMapping);
-            entities.AddRange(userRefreshTokenMapping.Where(q => q.ExpireAt > DateTime.UtcNow).Select(q => new RefreshTokenEntity
-            {
-                RefreshToken = q.RefreshToken
-            }));
+            entities.AddRange(userRefreshTokenMapping.Where(q => q.ExpireAt > DateTime.UtcNow).Select(q =>
+                new RefreshTokenEntity
+                {
+                    RefreshToken = q.RefreshToken
+                }));
         }
 
         await _authRepository.BatchDeleteAsync(entities, cancellationToken);
         return true;
     }
 
-    public async Task<bool> UpdateUserPhoneMappingAsync(string userId, string phone, CancellationToken cancellationToken)
+    public async Task<bool> UpdateUserPhoneMappingAsync(string userId, string? oldPhone, string phone,
+        CancellationToken cancellationToken)
     {
-        var userPhoneMapping = await _authRepository.GetPhoneUserMapAsync(userId, cancellationToken);
-        if (userPhoneMapping != null)
+        if (!string.IsNullOrEmpty(oldPhone))
         {
-            await _authRepository.DeletePhoneUserMapAsync(userPhoneMapping, cancellationToken);
+            var userPhoneMapping = await _authRepository.GetPhoneUserMapAsync(oldPhone, cancellationToken);
+            if (userPhoneMapping != null && userPhoneMapping.UserId == userId)
+            {
+                await _authRepository.DeletePhoneUserMapAsync(userPhoneMapping, cancellationToken);
+            }
         }
+
 
         await _authRepository.CreatePhoneUserMapAsync(new UserPhoneMapEntity()
         {
@@ -208,13 +222,18 @@ public class AuthService : IAuthService
         return true;
     }
 
-    public async Task<bool> UpdateUserEmailMappingAsync(string userId, string email, CancellationToken cancellationToken)
+    public async Task<bool> UpdateUserEmailMappingAsync(string userId, string? oldEmail, string email,
+        CancellationToken cancellationToken)
     {
-        var mapping = await _authRepository.GetEmailUserMapAsync(userId, cancellationToken);
-        if (mapping != null)
+        if (!string.IsNullOrEmpty(oldEmail))
         {
-            await _authRepository.DeleteEmailUserMapAsync(mapping, cancellationToken);
+            var mapping = await _authRepository.GetEmailUserMapAsync(oldEmail, cancellationToken);
+            if (mapping != null && mapping.UserId == userId)
+            {
+                await _authRepository.DeleteEmailUserMapAsync(mapping, cancellationToken);
+            }
         }
+
 
         await _authRepository.CreateEmailUserMapAsync(new UserEmailMapEntity
         {

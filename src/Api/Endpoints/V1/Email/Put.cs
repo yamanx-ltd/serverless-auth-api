@@ -27,5 +27,5 @@ public class Put : IEndpoint
             .WithTags("User");
     }
 
-    public record UpdateUserEmailMappingRequest(string Email);
+    public record UpdateUserEmailMappingRequest(string? OldEmail, string Email);
 }
