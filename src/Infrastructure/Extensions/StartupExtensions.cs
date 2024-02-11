@@ -24,6 +24,7 @@ public static class StartupExtensions
         service.AddScoped<ICaptchaService, CaptchaService>();
         service.AddScoped<ICryptoService, CryptoService>();
         service.AddScoped<ISmsProviderFactory, SmsProviderFactory>();
+        service.AddScoped<ISmsProvider, MockSmsProvider>();
         service.AddScoped<ISmsProvider, NetGsmSmsProvider>();
         service.AddScoped<ISmsProvider, TwilioSmsProvider>();
         service.AddScoped<IJwtService, JwtService>();

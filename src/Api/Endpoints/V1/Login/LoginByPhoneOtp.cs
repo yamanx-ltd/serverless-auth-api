@@ -27,7 +27,7 @@ public class LoginByPhoneOtp : IEndpoint
         var userId = await authService.FindUserByPhone(request.Phone, cancellationToken);
         var isRegistered = !string.IsNullOrEmpty(userId);
 
-        var result = await authService.SendLoginOtpAsync(userId, request.Phone, apiContext.Culture, cancellationToken);
+        var result = await authService.SendLoginOtpAsync(userId, request.Phone, apiContext.Culture,isRegistered, cancellationToken);
 
         return Results.Ok(new LoginByPhoneResponse(request.Phone, isRegistered, result));
     }

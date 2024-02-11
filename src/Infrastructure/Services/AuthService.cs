@@ -31,7 +31,7 @@ public class AuthService : IAuthService
         _eventBusManager = eventBusManager;
     }
 
-    public async Task<bool> SendLoginOtpAsync(string? userId, string phone, string culture,
+    public async Task<bool> SendLoginOtpAsync(string? userId, string phone, string culture,bool isRegistered,
         CancellationToken cancellationToken = default)
     {
         var otpEntity = await _authRepository.CreateLoginOtpAsync(userId, phone, cancellationToken);
@@ -43,7 +43,7 @@ public class AuthService : IAuthService
             messagePayload = string.Format(message.Message, otpEntity.Otp);
         }
 
-        await _eventBusManager.LoginOtpRequestedAsync(userId, phone, otpEntity.Otp, cancellationToken);
+        await _eventBusManager.LoginOtpRequestedAsync(userId, phone, otpEntity.Otp,isRegistered, cancellationToken);
         return await _smsProviderFactory.SendSms(phone, messagePayload, cancellationToken);
     }
 

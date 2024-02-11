@@ -22,11 +22,12 @@ public class EventBusManager : IEventBusManager
     }
 
 
-    public async Task<bool> LoginOtpRequestedAsync(string? userId, string phone, string code,
+    public async Task<bool> LoginOtpRequestedAsync(string? userId, string phone, string code, bool isRegistered,
         CancellationToken cancellationToken)
     {
         return await PublishAsync(
-            new EventModel<object>("LoginOtpRequested", new { UserId = userId, Code = code, Phone = phone }),
+            new EventModel<object>("LoginOtpRequested",
+                new { UserId = userId, Code = code, Phone = phone, IsRegistered = isRegistered }),
             cancellationToken);
     }
 
