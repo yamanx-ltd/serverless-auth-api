@@ -57,7 +57,7 @@ public class JwtService : IJwtService
         {
             return null;
         }
-        refreshTokenEntity.ExpireAt = DateTime.UtcNow.AddDays(_jwtOptionsSnapshot.Value.ExpireMinutes);
+        refreshTokenEntity.ExpireAt = DateTime.UtcNow.AddMinutes(_jwtOptionsSnapshot.Value.ExpireMinutes);
         return refreshTokenEntity?.UserId;
     }
 
