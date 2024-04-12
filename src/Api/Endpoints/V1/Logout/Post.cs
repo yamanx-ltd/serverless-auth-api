@@ -16,6 +16,7 @@ public class Post : IEndpoint
         CancellationToken cancellationToken)
     {
         await authService.DeleteRefreshTokenAsync(request.RefreshToken, cancellationToken);
+        await eventBusManager.LogoutUserAsync(apiContext.CurrentUserId, request.DeviceToken ?? "", cancellationToken);
         return Results.Ok();
     }
 
