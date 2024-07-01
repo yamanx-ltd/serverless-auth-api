@@ -20,7 +20,7 @@
     </ItemGroup>
     
     <ItemGroup>
-      <Folder Include="Endpoints\V1\External\" />
+      <Folder Include="Endpoints\V1\External\Apple\" />
     </ItemGroup>
 
 </Project>
