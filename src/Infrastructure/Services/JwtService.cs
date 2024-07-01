@@ -16,11 +16,14 @@ public class JwtService : IJwtService
 {
     private readonly IAuthRepository _authRepository;
     private readonly IOptionsSnapshot<JwtOptions> _jwtOptionsSnapshot;
+    private readonly IOptionsSnapshot<AdminUserOptions> _adminUserOptions;
 
-    public JwtService(IAuthRepository authRepository, IOptionsSnapshot<JwtOptions> jwtOptionsSnapshot)
+    public JwtService(IAuthRepository authRepository, IOptionsSnapshot<JwtOptions> jwtOptionsSnapshot,
+        IOptionsSnapshot<AdminUserOptions> adminUserOptions)
     {
         _authRepository = authRepository;
         _jwtOptionsSnapshot = jwtOptionsSnapshot;
+        _adminUserOptions = adminUserOptions;
     }
 
     public async Task<JwtDto> CreateJwtAsync(string userId, CancellationToken cancellationToken = default)
@@ -57,8 +60,9 @@ public class JwtService : IJwtService
         {
             return null;
         }
-        refreshTokenEntity.ExpireAt = DateTime.UtcNow.AddMinutes(_jwtOptionsSnapshot.Value.ExpireMinutes * 5);
-        await _authRepository.CreateRefreshTokenAsync(refreshTokenEntity, cancellationToken);
+
+        // refreshTokenEntity.ExpireAt = DateTime.UtcNow.AddMinutes(_jwtOptionsSnapshot.Value.ExpireMinutes * 5);
+        // await _authRepository.CreateRefreshTokenAsync(refreshTokenEntity, cancellationToken);
         return refreshTokenEntity?.UserId;
     }
 
@@ -67,17 +71,24 @@ public class JwtService : IJwtService
         var jwtOptions = _jwtOptionsSnapshot.Value;
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.ASCII.GetBytes(jwtOptions.Secret);
+        var claims = new List<Claim>
+        {
+            new Claim("userId", userId),
+            new Claim(ClaimTypes.Actor, "Login"),
+            new Claim(ClaimTypes.Authentication, "Login"),
+            new Claim(ClaimTypes.UserData, userId),
+        };
+        if (_adminUserOptions.Value.UserIds.Contains(userId))
+        {
+            claims.Add(new Claim("IsAdmin", "true"));
+        }
+
         var tokenDescriptor = new SecurityTokenDescriptor
         {
-            Subject = new ClaimsIdentity(new[]
-            {
-                new Claim("userId", userId),
-                new Claim(ClaimTypes.Actor, "Login"),
-                new Claim(ClaimTypes.Authentication, "Login"),
-                new Claim(ClaimTypes.UserData, userId),
-            }),
+            Subject = new ClaimsIdentity(claims),
             Expires = DateTime.UtcNow.AddMinutes(jwtOptions.ExpireMinutes),
-            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
+            SigningCredentials =
+                new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
             Audience = jwtOptions.Audience,
             Issuer = jwtOptions.Issuer
         };
